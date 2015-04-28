@@ -185,29 +185,57 @@ describe CarrierWave::ActiveRecord do
     end
 
     describe '#image=' do
-
-      it "should cache a file" do
+      it "caches a file" do
         @event.image = stub_file('test.jpeg')
         expect(@event.image).to be_an_instance_of(@uploader)
       end
 
-      it "should write nothing to the database, to prevent overriden filenames to fail because of unassigned attributes" do
+      it "writes nothing to the database, to prevent overriden filenames to fail because of unassigned attributes" do
         expect(@event[:image]).to be_nil
       end
 
-      it "should copy a file into into the cache directory" do
+      it "copies a file into into the cache directory" do
         @event.image = stub_file('test.jpeg')
         expect(@event.image.current_path).to match(%r(^#{public_path('uploads/tmp')}))
       end
 
-      it "should do nothing when nil is assigned" do
-        @event.image = nil
-        expect(@event.image).to be_blank
+      context "when empty string is assigned" do
+        it "does nothing when" do
+          @event.image = ''
+          expect(@event.image).to be_blank
+        end
+
+        context "and the previous value was an empty string" do
+          before do
+            @event.image = ""
+            @event.save
+          end
+
+          it "does not write to dirty changes" do
+            @event.image = ''
+            expect(@event.changes.keys).not_to include("image")
+          end
+        end
+
       end
 
-      it "should do nothing when an empty string is assigned" do
-        @event.image = ''
-        expect(@event.image).to be_blank
+      context "when nil is assigned" do
+        it "does nothing" do
+          @event.image = nil
+          expect(@event.image).to be_blank
+        end
+
+        context "and the previous value was nil" do
+          before do
+            @event.image = nil
+            @event.save
+          end
+
+          it "does not write to dirty changes" do
+            @event.image = nil
+            expect(@event.changes.keys).not_to include("image")
+          end
+        end
       end
 
       context 'when validating white list integrity' do
@@ -259,7 +287,6 @@ describe CarrierWave::ActiveRecord do
           end
         end
       end
-
 
       context 'when validating processing' do
         before do
